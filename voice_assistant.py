@@ -2,12 +2,18 @@
     Name: Saeed Mahmadzuber Ghasura
     Project: Voice Assistant
 """
-
+import os
+import vosk
+import wave
+import json
 import speech_recognition as sr
 import pyttsx3
 import requests
 import subprocess
 from datetime import datetime
+
+vosk_model_path = r"D:\Voice Assistant\Vosk\vosk-model-small-en-in-0.4"
+model = vosk.Model(vosk_model_path)
 
 recognizer = sr.Recognizer()
 tts_engine = pyttsx3.init()
@@ -21,35 +27,46 @@ def get_default_microphone_index():
     return default_index
 
 def listen():
-    mic_index = get_default_microphone_index()
+    recognizer = sr.Recognizer()
+    mic_index = get_default_microphone_index()  # Implement this function to get the correct mic index
     
     try:
         with sr.Microphone(device_index=mic_index) as source:
             print("Listening...")
-            recognizer.adjust_for_ambient_noise(source) 
+            recognizer.adjust_for_ambient_noise(source)
             audio = recognizer.listen(source)
-            
+
             if audio is None:
                 speak("I didn't catch that. Could you please repeat?")
                 return ""
-            
-            try:
-                text = recognizer.recognize_google(audio)
-                print(f"You said: {text}")
-                return text.lower()
-            except sr.UnknownValueError:
-                speak("Sorry, I did not understand that.")
-                return ""
-            except sr.RequestError:
-                speak("Could not request results from the service.")
-                return ""
-    except sr.WaitTimeoutError:
-        speak("Timeout listening. Please try again.")
-        return ""
-    except Exception as e:
-        speak(f"Error accessing the microphone: {str(e)}")
-        return ""
 
+            # Save the audio to a WAV file
+            with wave.open("audio.wav", "wb") as f:
+                f.setnchannels(1)
+                f.setsampwidth(2)
+                f.setframerate(16000)
+                f.writeframes(audio.get_wav_data())
+
+            # Use Vosk to transcribe the audio
+            with wave.open("audio.wav", "rb") as f:
+                rec = vosk.KaldiRecognizer(model, f.getframerate())
+                while True:
+                    data = f.readframes(4000)
+                    if len(data) == 0:
+                        break
+                    if rec.AcceptWaveform(data):
+                        break
+
+            result = json.loads(rec.FinalResult())
+            text = result.get("text", "")
+            print(f"You said: {text}")
+            return text.lower()
+
+    except Exception as e:
+        print(f"Error: {e}")
+        speak("Sorry, I couldn't process your request.")
+        return ""
+    
 def get_weather():
     api_key = "eea4d49d67b16c4f1ab04a2fd9dc3efb" 
     base_url = "http://api.openweathermap.org/data/2.5/weather?"
