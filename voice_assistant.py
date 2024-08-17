@@ -17,6 +17,8 @@ model = vosk.Model(vosk_model_path)
 
 recognizer = sr.Recognizer()
 tts_engine = pyttsx3.init()
+tts_engine.setProperty('rate', 150)
+tts_engine.setProperty('volume', 0.9)
 
 def speak(text):
     tts_engine.say(text)
@@ -28,7 +30,7 @@ def get_default_microphone_index():
 
 def listen():
     recognizer = sr.Recognizer()
-    mic_index = get_default_microphone_index()  # Implement this function to get the correct mic index
+    mic_index = get_default_microphone_index() 
     
     try:
         with sr.Microphone(device_index=mic_index) as source:
@@ -40,14 +42,12 @@ def listen():
                 speak("I didn't catch that. Could you please repeat?")
                 return ""
 
-            # Save the audio to a WAV file
             with wave.open("audio.wav", "wb") as f:
                 f.setnchannels(1)
                 f.setsampwidth(2)
                 f.setframerate(16000)
                 f.writeframes(audio.get_wav_data())
 
-            # Use Vosk to transcribe the audio
             with wave.open("audio.wav", "rb") as f:
                 rec = vosk.KaldiRecognizer(model, f.getframerate())
                 while True:
