@@ -11,6 +11,8 @@ import pyttsx3
 import requests
 import subprocess
 from datetime import datetime
+import random
+import webbrowser
 
 vosk_model_path = r"D:\Voice Assistant\Vosk\vosk-model-small-en-in-0.4"
 model = vosk.Model(vosk_model_path)
@@ -59,14 +61,17 @@ def listen():
 
             result = json.loads(rec.FinalResult())
             text = result.get("text", "")
-            print(f"You said: {text}")
+            if not text:
+                speak("I didn't catch that. Could you please repeat?")
+            else:
+                print(f"You said: {text}")
             return text.lower()
 
     except Exception as e:
         print(f"Error: {e}")
         speak("Sorry, I couldn't process your request.")
         return ""
-    
+
 def get_weather():
     api_key = "eea4d49d67b16c4f1ab04a2fd9dc3efb" 
     base_url = "http://api.openweathermap.org/data/2.5/weather?"
@@ -96,47 +101,74 @@ def get_current_time():
     current_time = datetime.now().strftime("%I:%M %p")  
     speak(f"The current time is {current_time}.")
 
+def tell_joke():
+    jokes = [
+        "Why don't scientists trust atoms? Because they make up everything!",
+        "Why did the math book look sad? Because it had too many problems.",
+        "Why don't skeletons fight each other? They don't have the guts."
+    ]
+    joke = random.choice(jokes)
+    speak(joke)
+
+def open_website():
+    speak("Which website would you like to open?")
+    website = listen()
+    if website:
+        webbrowser.open(f"https://{website}")
+        speak(f"Opening {website}...")
+    else:
+        speak("I didn't catch that. Please try again.")
+
+def handle_command(command):
+    command = command.lower()
+
+    if "stop" in command or "goodbye" in command or "exit" in command:
+        speak("Goodbye!")
+        return "exit"
+    elif "hello" in command or "how are you" in command:
+        speak("Hello! I'm doing well, thank you.")
+    elif "get weather" in command or "what is the weather today" in command:
+        get_weather()
+    elif "open notepad" in command:
+        if not notepad_process:
+            notepad_process.append(open_notepad())
+        else:
+            speak("Notepad is already open.")
+    elif "close notepad" in command:
+        close_notepad(notepad_process.pop() if notepad_process else None)
+    elif "current time" in command or "time" in command:
+        get_current_time()
+    elif "joke" in command:
+        tell_joke()
+    elif "open website" in command:
+        open_website()
+    else:
+        speak("I am not sure how to help with that.")
+
 def main():
+    print("Available commands:")
     commands = [
         "stop", "goodbye", "exit", 
         "hello", "how are you", 
         "get weather", "what is the weather today", 
         "open notepad", 
         "close notepad", 
-        "current time", "time"
+        "current time", "time",
+        "tell me a joke", 
+        "open website"
     ]
-    
-    print("Available commands:")
     for command in commands:
         print(f"- {command}")
     
     speak("Hello! How can I assist you today?")
-    notepad_process = None
-    
+    global notepad_process
+    notepad_process = []
+
     while True:
         command = listen()
         if command:
-            if "stop" in command or "goodbye" in command or "exit" in command:
-                speak("Goodbye!")
-                close_notepad(notepad_process)
+            if handle_command(command) == "exit":
                 break
-            elif "hello" in command or "how are you" in command:
-                speak("Hello! I'm doing well, thank you.")
-            elif "get weather" in command or "what is the weather today" in command:
-                get_weather()
-            elif "open notepad" in command:
-                if notepad_process is None:
-                    notepad_process = open_notepad()
-                else:
-                    speak("Notepad is already open.")
-            elif "close notepad" in command:
-                close_notepad(notepad_process)
-                notepad_process = None
-            elif "current time" in command or "time" in command:
-                get_current_time()
-            else:
-                speak("I am not sure how to help with that.")
 
 if __name__ == "__main__":
     main()
-
