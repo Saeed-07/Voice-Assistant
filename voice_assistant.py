@@ -1,174 +1,132 @@
-"""
-    Name: Saeed Mahmadzuber Ghasura
-    Project: Voice Assistant
-"""
-import os
-import vosk
-import wave
-import json
+import tkinter as tk
+import threading
 import speech_recognition as sr
 import pyttsx3
 import requests
-import subprocess
 from datetime import datetime
-import random
-import webbrowser
 
-vosk_model_path = r"D:\Voice Assistant\Vosk\vosk-model-small-en-in-0.4"
-model = vosk.Model(vosk_model_path)
-
-recognizer = sr.Recognizer()
 tts_engine = pyttsx3.init()
 tts_engine.setProperty('rate', 150)
 tts_engine.setProperty('volume', 0.9)
 
 def speak(text):
-    tts_engine.say(text)
-    tts_engine.runAndWait()
-
-def get_default_microphone_index():
-    default_index = 0
-    return default_index
+    try:
+        tts_engine.say(text)
+        tts_engine.runAndWait()
+    except Exception as e:
+        print(f"Error in speak function: {e}")
 
 def listen():
     recognizer = sr.Recognizer()
-    mic_index = get_default_microphone_index() 
-    
     try:
-        with sr.Microphone(device_index=mic_index) as source:
+        with sr.Microphone() as source:
             print("Listening...")
             recognizer.adjust_for_ambient_noise(source)
             audio = recognizer.listen(source)
-
-            if audio is None:
-                speak("I didn't catch that. Could you please repeat?")
-                return ""
-
-            with wave.open("audio.wav", "wb") as f:
-                f.setnchannels(1)
-                f.setsampwidth(2)
-                f.setframerate(16000)
-                f.writeframes(audio.get_wav_data())
-
-            with wave.open("audio.wav", "rb") as f:
-                rec = vosk.KaldiRecognizer(model, f.getframerate())
-                while True:
-                    data = f.readframes(4000)
-                    if len(data) == 0:
-                        break
-                    if rec.AcceptWaveform(data):
-                        break
-
-            result = json.loads(rec.FinalResult())
-            text = result.get("text", "")
-            if not text:
-                speak("I didn't catch that. Could you please repeat?")
-            else:
-                print(f"You said: {text}")
+            text = recognizer.recognize_google(audio)
             return text.lower()
-
+    except sr.UnknownValueError:
+        return "Sorry, I did not understand that."
+    except sr.RequestError:
+        return "Sorry, there was an error with the request."
     except Exception as e:
-        print(f"Error: {e}")
-        speak("Sorry, I couldn't process your request.")
-        return ""
+        print(f"Error in listen function: {e}")
+        return "An error occurred."
 
 def get_weather():
-    api_key = "eea4d49d67b16c4f1ab04a2fd9dc3efb" 
-    base_url = "http://api.openweathermap.org/data/2.5/weather?"
-    city_name = "Ahmedabad"  
-    complete_url = base_url + "appid=" + api_key + "&q=" + city_name + "&units=metric"
-    response = requests.get(complete_url)
-    data = response.json()
-    
-    if data["cod"] != "404":
-        main = data["main"]
-        temperature = main["temp"]
-        weather_description = data["weather"][0]["description"]
-        speak(f"The temperature in {city_name} is {temperature} degrees Celsius with {weather_description}.")
-    else:
-        speak("City not found.")
+    try:
+        api_key = "eea4d49d67b16c4f1ab04a2fd9dc3efb"
+        base_url = "http://api.openweathermap.org/data/2.5/weather?"
+        city_name = "Ahmedabad"
+        complete_url = base_url + "appid=" + api_key + "&q=" + city_name + "&units=metric"
+        response = requests.get(complete_url)
+        data = response.json()
 
-def open_notepad():
-    speak("Opening Notepad.")
-    return subprocess.Popen(["notepad.exe"])
-
-def close_notepad(process):
-    if process:
-        speak("Closing Notepad.")
-        process.terminate()
+        if data["cod"] != "404":
+            main = data["main"]
+            temperature = main["temp"]
+            weather_description = data["weather"][0]["description"]
+            return f"The temperature in {city_name} is {temperature} degrees Celsius with {weather_description}."
+        else:
+            return "City not found."
+    except Exception as e:
+        print(f"Error in get_weather function: {e}")
+        return "An error occurred while fetching weather."
 
 def get_current_time():
-    current_time = datetime.now().strftime("%I:%M %p")  
-    speak(f"The current time is {current_time}.")
-
-def tell_joke():
-    jokes = [
-        "Why don't scientists trust atoms? Because they make up everything!",
-        "Why did the math book look sad? Because it had too many problems.",
-        "Why don't skeletons fight each other? They don't have the guts."
-    ]
-    joke = random.choice(jokes)
-    speak(joke)
-
-def open_website():
-    speak("Which website would you like to open?")
-    website = listen()
-    if website:
-        webbrowser.open(f"https://{website}")
-        speak(f"Opening {website}...")
-    else:
-        speak("I didn't catch that. Please try again.")
+    try:
+        current_time = datetime.now().strftime("%I:%M %p")
+        return f"The current time is {current_time}."
+    except Exception as e:
+        print(f"Error in get_current_time function: {e}")
+        return "An error occurred while fetching the time."
 
 def handle_command(command):
-    command = command.lower()
-
     if "stop" in command or "goodbye" in command or "exit" in command:
-        speak("Goodbye!")
-        return "exit"
+        return "Goodbye!"
     elif "hello" in command or "how are you" in command:
-        speak("Hello! I'm doing well, thank you.")
+        return "Hello! I'm doing well, thank you."
     elif "get weather" in command or "what is the weather today" in command:
-        get_weather()
-    elif "open notepad" in command:
-        if not notepad_process:
-            notepad_process.append(open_notepad())
-        else:
-            speak("Notepad is already open.")
-    elif "close notepad" in command:
-        close_notepad(notepad_process.pop() if notepad_process else None)
+        return get_weather()
     elif "current time" in command or "time" in command:
-        get_current_time()
-    elif "joke" in command:
-        tell_joke()
-    elif "open website" in command:
-        open_website()
+        return get_current_time()
     else:
-        speak("I am not sure how to help with that.")
+        return "I'm not sure how to help with that."
 
-def main():
-    print("Available commands:")
-    commands = [
-        "stop", "goodbye", "exit", 
-        "hello", "how are you", 
-        "get weather", "what is the weather today", 
-        "open notepad", 
-        "close notepad", 
-        "current time", "time",
-        "tell me a joke", 
-        "open website"
-    ]
-    for command in commands:
-        print(f"- {command}")
+def handle_command_thread(command):
+    response = handle_command(command)
     
-    speak("Hello! How can I assist you today?")
-    global notepad_process
-    notepad_process = []
+    # Display the response before speaking
+    chat_window.config(state='normal')
+    chat_window.insert(tk.END, f"Assistant: {response}\n")
+    chat_window.config(state='disabled')
+    chat_window.yview(tk.END)
+    
+    threading.Thread(target=speak, args=(response,)).start()
+    
+    if response == "Goodbye!":
+        root.after(100, root.destroy)  
 
-    while True:
-        command = listen()
-        if command:
-            if handle_command(command) == "exit":
-                break
+def on_submit(event=None):
+    if input_mode == "speak":
+        threading.Thread(target=handle_command_thread, args=(listen(),)).start()
+    elif input_mode == "type":
+        command = input_entry.get()
+        input_entry.delete(0, tk.END)
+        chat_window.config(state='normal')
+        chat_window.insert(tk.END, f"You: {command}\n")
+        chat_window.config(state='disabled')
+        chat_window.yview(tk.END)
+        threading.Thread(target=handle_command_thread, args=(command,)).start()
 
-if __name__ == "__main__":
-    main()
+def toggle_input_mode():
+    global input_mode
+    if input_mode == "speak":
+        input_mode = "type"
+        mode_button.config(text="Type")
+        input_entry.config(state='normal')
+    else:
+        input_mode = "speak"
+        mode_button.config(text="Speak")
+        input_entry.config(state='disabled')
+
+root = tk.Tk()
+root.title("Voice Assistant")
+root.geometry("400x500")
+
+input_mode = "speak"  
+
+chat_window = tk.Text(root, bg="#34495e", fg="white", font=("Arial", 12), state='disabled', wrap='word')
+chat_window.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+
+input_entry = tk.Entry(root, bg="#ecf0f1", font=("Arial", 14), state='disabled')
+input_entry.pack(pady=10, padx=10, fill=tk.X)
+input_entry.bind('<Return>', on_submit)  # Bind Enter key to on_submit function
+
+mode_button = tk.Button(root, text="Speak", bg="#1abc9c", command=toggle_input_mode)
+mode_button.pack(pady=5)
+
+submit_button = tk.Button(root, text="Submit", bg="#3498db", fg="white", font=("Arial", 14), command=on_submit)
+submit_button.pack(pady=5)
+
+root.mainloop()
