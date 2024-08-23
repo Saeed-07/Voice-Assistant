@@ -4,6 +4,19 @@ import speech_recognition as sr
 import pyttsx3
 import requests
 from datetime import datetime
+import sys
+import os
+
+def resource_path(relative_path):
+    # Check if the application is bundled using PyInstaller
+    if hasattr(sys, '_MEIPASS'):
+        # If bundled, the path would be relative to _MEIPASS
+        base_path = sys._MEIPASS
+    else:
+        # Otherwise, it's relative to the script
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 tts_engine = pyttsx3.init()
 tts_engine.setProperty('rate', 150)
@@ -117,8 +130,8 @@ root.state("zoomed")
 
 input_mode = "speak"  
 
-microphone_icon = tk.PhotoImage(file="./Icons/icons8-microphone-24.png") 
-keyboard_icon = tk.PhotoImage(file="./Icons/icons8-keyboard-30.png") 
+microphone_icon = tk.PhotoImage(file=resource_path("Icons/icons8-microphone-24.png"))
+keyboard_icon = tk.PhotoImage(file=resource_path("Icons/icons8-keyboard-30.png"))
 
 chat_window = tk.Text(root, bg="#34495e", fg="white", font=("Arial", 12), state='disabled', wrap='word')
 chat_window.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
