@@ -64,7 +64,7 @@ def get_current_time():
 def handle_command(command):
     if "stop" in command or "goodbye" in command or "exit" in command:
         return "Goodbye!"
-    elif "hello" in command or "how are you" in command:
+    elif "hi" in command or "hello" in command or "how are you" in command:
         return "Hello! I'm doing well, thank you."
     elif "get weather" in command or "what is the weather today" in command:
         return get_weather()
@@ -103,27 +103,31 @@ def toggle_input_mode():
     global input_mode
     if input_mode == "speak":
         input_mode = "type"
-        mode_button.config(text="Type")
+        mode_button.config(image=keyboard_icon)
         input_entry.config(state='normal')
     else:
         input_mode = "speak"
-        mode_button.config(text="Speak")
+        mode_button.config(image=microphone_icon)
         input_entry.config(state='disabled')
 
 root = tk.Tk()
 root.title("Voice Assistant")
-root.geometry("400x500")
+
+root.state("zoomed")
 
 input_mode = "speak"  
+
+microphone_icon = tk.PhotoImage(file="./Icons/icons8-microphone-24.png") 
+keyboard_icon = tk.PhotoImage(file="./Icons/icons8-keyboard-30.png") 
 
 chat_window = tk.Text(root, bg="#34495e", fg="white", font=("Arial", 12), state='disabled', wrap='word')
 chat_window.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
 input_entry = tk.Entry(root, bg="#ecf0f1", font=("Arial", 14), state='disabled')
 input_entry.pack(pady=10, padx=10, fill=tk.X)
-input_entry.bind('<Return>', on_submit)  # Bind Enter key to on_submit function
+input_entry.bind('<Return>', on_submit)  
 
-mode_button = tk.Button(root, text="Speak", bg="#1abc9c", command=toggle_input_mode)
+mode_button = tk.Button(root, image=microphone_icon, bg="#1abc9c", command=toggle_input_mode)
 mode_button.pack(pady=5)
 
 submit_button = tk.Button(root, text="Submit", bg="#3498db", fg="white", font=("Arial", 14), command=on_submit)
