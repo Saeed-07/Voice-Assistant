@@ -1,26 +1,38 @@
-import tkinter as tk
-import threading
-import speech_recognition as sr
-import pyttsx3
-import requests
-from datetime import datetime
-import sys
-import os
+"""
+    Name: Saeed Mahmadzuber Ghasura
+    Project: Voice Assistant
+"""
+
+# Import all the required libraries.
+
+import tkinter as tk    # for creating GUI
+import threading    # to handle speaking and listening simultaneously
+import speech_recognition as sr    # to convert speech into text
+import pyttsx3    # to convert text to speech
+import requests    # to make HTTP requests to access web APIs
+from datetime import datetime    # to fetch date and time
+import sys    # to handle system specific parameters
+import os    # to interact with OS
+
+# This helps to locate resource files(in our case icons).
+# '_MEIPASS' is a special attribute set by PyInstaller when it bundles a program into .exe 
 
 def resource_path(relative_path):
-    # Check if the application is bundled using PyInstaller
     if hasattr(sys, '_MEIPASS'):
-        # If bundled, the path would be relative to _MEIPASS
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS    # bundled mode
     else:
-        # Otherwise, it's relative to the script
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
 
+# Initialize Text-to-Speech Engine (in our case, we used pyttsx3 library).
+# Set basic properties of speech such as speech rate and volume.
+
 tts_engine = pyttsx3.init()
 tts_engine.setProperty('rate', 150)
 tts_engine.setProperty('volume', 0.9)
+
+# This converts provided text into speech.
 
 def speak(text):
     try:
@@ -28,6 +40,9 @@ def speak(text):
         tts_engine.runAndWait()
     except Exception as e:
         print(f"Error in speak function: {e}")
+
+# This function is used to listen the command and also handles the microphone.
+# Speech recognition library is used to handle listening.
 
 def listen():
     recognizer = sr.Recognizer()
@@ -45,6 +60,10 @@ def listen():
     except Exception as e:
         print(f"Error in listen function: {e}")
         return "An error occurred."
+    
+# Here, we get the weather using API from the website "openweathermap" and output it in formatted manner.
+# I have set city to Ahmedabad by default.(which you can change accordingly)
+# Also one can use their own API key.    
 
 def get_weather():
     try:
@@ -66,6 +85,8 @@ def get_weather():
         print(f"Error in get_weather function: {e}")
         return "An error occurred while fetching weather."
 
+# Here, current date and time is fetched using datetime library and is formatted for output to the user.
+
 def get_current_time():
     try:
         current_time = datetime.now().strftime("%I:%M %p")
@@ -73,6 +94,9 @@ def get_current_time():
     except Exception as e:
         print(f"Error in get_current_time function: {e}")
         return "An error occurred while fetching the time."
+
+# This handles all commands supported by our voice assistant.
+# We can add/remove commands and modify accordingly to handle them.
 
 def handle_command(command):
     if "stop" in command or "goodbye" in command or "exit" in command:
@@ -86,10 +110,13 @@ def handle_command(command):
     else:
         return "I'm not sure how to help with that."
 
+# This is used to handle command processing in seperate thread.
+# It updates the chat window and speak the response.
+# In last, we handle exiting the app if user commands it to.
+
 def handle_command_thread(command):
     response = handle_command(command)
     
-    # Display the response before speaking
     chat_window.config(state='normal')
     chat_window.insert(tk.END, f"Assistant: {response}\n")
     chat_window.config(state='disabled')
@@ -99,6 +126,8 @@ def handle_command_thread(command):
     
     if response == "Goodbye!":
         root.after(100, root.destroy)  
+
+# It handles the submission of user input.         
 
 def on_submit(event=None):
     if input_mode == "speak":
@@ -112,6 +141,8 @@ def on_submit(event=None):
         chat_window.yview(tk.END)
         threading.Thread(target=handle_command_thread, args=(command,)).start()
 
+# It handles switching of input modes.
+
 def toggle_input_mode():
     global input_mode
     if input_mode == "speak":
@@ -122,6 +153,8 @@ def toggle_input_mode():
         input_mode = "speak"
         mode_button.config(image=microphone_icon)
         input_entry.config(state='disabled')
+
+# Creating the GUI using Tkinter.        
 
 root = tk.Tk()
 root.title("Voice Assistant")
