@@ -1,0 +1,8 @@
+tkinter
+threading
+speechrecognition
+pyttsx3
+requests
+datetime
+sys
+os
